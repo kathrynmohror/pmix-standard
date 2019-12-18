@@ -397,6 +397,19 @@ The v3.1 update includes clarifications and corrections from the v3.0 document:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% History: Version 3.2
+\section{Version 3.2: Oct. 2019}
+
+The v3.2 update includes clarifications and corrections from the v3.1 document:
+
+\begin{itemize}
+    \item Correct an error in the \refapi{PMIx_Allocation_request} function signature, and clarify the allocation ID attributes
+    \item Rename the \refattr{PMIX_ALLOC_ID} attribute to \refattr{PMIX_ALLOC_REQ_ID} to clarify that this is a string the user provides as a means to identify their request to query status
+    \item Add a new \refattr{PMIX_ALLOC_ID} attribute that contains the identifier (provided by the host environment) for the resulting allocation which can later be used to reference the allocated resources in, for example, a call to \refapi{PMIx_Spawn}
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% History: Version 4.0
 \section{Version 4.0: June 2019}
 
@@ -410,4 +423,8 @@ The following changes were introduced in v4.0 of the PMIx Standard:
         \item \refattr{PMIX_CLIENT_ATTRIBUTES}, \refattr{PMIX_SERVER_ATTRIBUTES}, \refattr{PMIX_TOOL_ATTRIBUTES}, and \refattr{PMIX_HOST_ATTRIBUTES} to identify which library supports the attribute; and
         \item \refattr{PMIX_MAX_VALUE}, \refattr{PMIX_MIN_VALUE}, and \refattr{PMIX_ENUM_VALUE} to provide machine-parsable description of accepted values
     \end{itemize}
+    \item Add \refconst{PMIX_APP_WILDCARD} to reference all applications within a given job
+    \item Fix signature of blocking APIs \refapi{PMIx_Allocation_request}, \refapi{PMIx_Job_control}, \refapi{PMIx_Process_monitor}, \refapi{PMIx_Get_credential}, and \refapi{PMIx_Validate_credential} to allow return of results
+    \item Update description to provide an option for blocking behavior of the \refapi{PMIx_Register_event_handler}, \refapi{PMIx_Deregister_event_handler}, \refapi{PMIx_Notify_event}, \refapi{PMIx_IOF_pull}, \refapi{PMIx_IOF_deregister}, and \refapi{PMIx_IOF_push} APIs. The need for blocking forms of these functions was not initially anticipated but has emerged over time. For these functions, the return value is sufficient to provide the caller with information otherwise returned via callback. Thus, use of a \code{NULL} value as the callback function parameter was deemed a minimal disruption method for providing the desired capability
+    \item
 \end{itemize}

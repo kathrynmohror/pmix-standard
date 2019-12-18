@@ -97,6 +97,121 @@ The caller is responsible for releasing the string when done with it.
 
 
 %%%%%%%%%%%
+\subsection{\code{PMIx_Query_info}}
+\declareapi{PMIx_Query_info}
+
+%%%%
+\summary
+
+Query information about the system in general.
+
+%%%%
+\format
+
+\versionMarker{4.0}
+\cspecificstart
+\begin{codepar}
+pmix_status_t
+PMIx_Query_info(pmix_query_t queries[], size_t nqueries,
+                pmix_info_t *info[], size_t *ninfo)
+\end{codepar}
+\cspecificend
+
+\begin{arglist}
+\argin{queries}{Array of query structures (array of handles)}
+\argin{nqueries}{Number of elements in the \refarg{queries} array (integer)}
+\arginout{info}{Address where a pointer to an array of \refstruct{pmix_info_t} containing the results of the query can be returned (memory reference)}
+\arginout{ninfo}{Address where the number of elements in \refarg{info} can be returned (handle)}
+\end{arglist}
+
+Returns one of the following:
+
+\begin{itemize}
+\item \refconst{PMIX_SUCCESS} All data has been returned
+\item \refconst{PMIX_ERR_NOT_FOUND} None of the requested data was available
+\item \refconst{PMIX_ERR_PARTIAL_SUCCESS} Some of the data has been returned
+\item \refconst{PMIX_ERR_NOT_SUPPORTED} The host \ac{RM} does not support this function
+\item a non-zero \ac{PMIx} error constant indicating a reason for the request's failure
+\end{itemize}
+
+\reqattrstart
+\ac{PMIx} libraries that support this \ac{API} are required to support the following attributes:
+
+\pastePRIAttributeItem{PMIX_QUERY_REFRESH_CACHE}
+\pastePRIAttributeItem{PMIX_SESSION_INFO}
+\pastePRIAttributeItem{PMIX_JOB_INFO}
+\pastePRIAttributeItem{PMIX_APP_INFO}
+\pastePRIAttributeItem{PMIX_NODE_INFO}
+\pastePRIAttributeItemBegin{PMIX_PROCID} Specifies the process ID whose information is being requested - e.g., a query asking for the \refattr{PMIX_LOCAL_RANK} of a specified process. Only required when the request is for information on a specific process.
+\pastePRIAttributeItemEnd
+\pastePRIAttributeItemBegin{PMIX_NSPACE} Specifies the namespace of the process whose information is being requested - e.g., a query asking for the \refattr{PMIX_LOCAL_RANK} of a specified process. Must be accompanied by the \refattr{PMIX_RANK} attribute. Only required when the request is for information on a specific process.
+\pastePRIAttributeItemEnd
+\pastePRIAttributeItemBegin{PMIX_RANK} Specifies the rank of the process whose information is being requested - e.g., a query asking for the \refattr{PMIX_LOCAL_RANK} of a specified process. Must be accompanied by the \refattr{PMIX_NSPACE} attribute. Only required when the request is for information on a specific process.
+\pastePRIAttributeItemEnd
+\pastePRIAttributeItem{PMIX_QUERY_ATTRIBUTE_SUPPORT}
+\pastePRIAttributeItem{PMIX_CLIENT_ATTRIBUTES}
+\pastePRIAttributeItem{PMIX_SERVER_ATTRIBUTES}
+\pastePRIAttributeItem{PMIX_HOST_ATTRIBUTES}
+\pastePRIAttributeItem{PMIX_TOOL_ATTRIBUTES}
+
+Note that inclusion of the \refattr{PMIX_PROCID} directive and either the \refattr{PMIX_NSPACE} or the \refattr{PMIX_RANK} attribute will return a \refconst{PMIX_ERR_BAD_PARAM} result, and that the inclusion of a process identifier must apply to all keys in that \refstruct{pmix_query_t}. Queries for information on multiple specific processes therefore requires submitting multiple \refstruct{pmix_query_t} structures, each referencing one process.
+
+\ac{PMIx} libraries are not required to directly support any other attributes for this function. However, any provided attributes must be passed to the host \ac{SMS} daemon for processing, and the \ac{PMIx} library is \textit{required} to add the \refPRIAttributeItem{PMIX_USERID} and the \refPRIAttributeItem{PMIX_GRPID} attributes of the client process making the request.
+
+\divider
+
+Host environments that support this operation are required to support the following attributes as qualifiers to the request:
+
+\pastePRRTEAttributeItemBegin{PMIX_PROCID} Specifies the process ID whose information is being requested - e.g., a query asking for the \refattr{PMIX_LOCAL_RANK} of a specified process. Only required when the request is for information on a specific process.
+\pastePRIAttributeItemEnd
+
+\pastePRRTEAttributeItemBegin{PMIX_NSPACE} Specifies the namespace of the process whose information is being requested - e.g., a query asking for the \refattr{PMIX_LOCAL_RANK} of a specified process. Must be accompanied by the \refattr{PMIX_RANK} attribute. Only required when the request is for information on a specific process.
+\pastePRIAttributeItemEnd
+
+\pastePRRTEAttributeItemBegin{PMIX_RANK} Specifies the rank of the process whose information is being requested - e.g., a query asking for the \refattr{PMIX_LOCAL_RANK} of a specified process. Must be accompanied by the \refattr{PMIX_NSPACE} attribute. Only required when the request is for information on a specific process.
+\pastePRIAttributeItemEnd
+
+Note that inclusion of the \refattr{PMIX_PROCID} directive and either the \refattr{PMIX_NSPACE} or the \refattr{PMIX_RANK} attribute will return a \refconst{PMIX_ERR_BAD_PARAM} result, and that the inclusion of a process identifier must apply to all keys in that \refstruct{pmix_query_t}. Queries for information on multiple specific processes therefore requires submitting multiple \refstruct{pmix_query_t} structures, each referencing one process.
+
+\optattrstart
+The following attributes are optional for host environments that support this operation:
+
+\pastePRRTEAttributeItem{PMIX_QUERY_NAMESPACES}
+\pastePRRTEAttributeItem{PMIX_QUERY_JOB_STATUS}
+\pasteAttributeItem{PMIX_QUERY_QUEUE_LIST}
+\pasteAttributeItem{PMIX_QUERY_QUEUE_STATUS}
+\pastePRRTEAttributeItem{PMIX_QUERY_PROC_TABLE}
+\pastePRRTEAttributeItem{PMIX_QUERY_LOCAL_PROC_TABLE}
+\pastePRRTEAttributeItem{PMIX_QUERY_SPAWN_SUPPORT}
+\pastePRRTEAttributeItem{PMIX_QUERY_DEBUG_SUPPORT}
+\pastePRRTEAttributeItem{PMIX_QUERY_MEMORY_USAGE}
+\pastePRRTEAttributeItem{PMIX_QUERY_REPORT_AVG}
+\pastePRRTEAttributeItem{PMIX_QUERY_REPORT_MINMAX}
+\pasteAttributeItem{PMIX_QUERY_ALLOC_STATUS}
+\pastePRRTEAttributeItem{PMIX_TIME_REMAINING}
+\pastePRRTEAttributeItemBegin{PMIX_SERVER_URI} Requests the URI of the specified \ac{PMIx} server's \ac{PMIx} connection. Defaults to requesting the information for the local \ac{PMIx} server.
+\pastePRRTEAttributeItemEnd
+\pastePRRTEAttributeItemBegin{PMIX_PROC_URI} Requests the URI of the specified \ac{PMIx} server's out-of-band connection. Defaults to requesting the information for the local \ac{PMIx} server.
+\pastePRRTEAttributeItemEnd
+
+\optattrend
+
+%%%%
+\descr
+
+Query information about the system in general.
+This can include a list of active namespaces, network topology, etc.
+Also can be used to query node-specific info such as the list of peers executing on a given node.
+We assume that the host \ac{RM} will exercise appropriate access control on the information.
+
+The returned \refarg{status} indicates if requested data was found or not.
+The returned array of \refstruct{pmix_info_t} will contain each key that was provided and the corresponding value that was found. Requests for keys that are not found will return the key paired with a value of type \refconst{PMIX_UNDEF}. The caller is responsible for releasing the returned array.
+
+\adviceimplstart
+Information returned from \refapi{PMIx_Query_info} shall be locally cached so that retrieval by subsequent calls to \refapi{PMIx_Get}, \refapi{PMIx_Query_info}, or \refapi{PMIx_Query_info_nb} can succeed with minimal overhead. The local cache shall be checked prior to querying the \ac{PMIx} server and/or the host environment. Queries that include the \refattr{PMIX_QUERY_REFRESH_CACHE} attribute shall bypass the local cache and retrieve a new value for the query, refreshing the values in the cache upon return.
+\adviceimplend
+
+%%%%%%%%%%%
 \subsection{\code{PMIx_Query_info_nb}}
 \declareapi{PMIx_Query_info_nb}
 
@@ -206,24 +321,13 @@ The following attributes are optional for host environments that support this op
 %%%%
 \descr
 
-Query information about the system in general.
-This can include a list of active namespaces, network topology, etc.
-Also can be used to query node-specific info such as the list of peers executing on a given node.
-We assume that the host \ac{RM} will exercise appropriate access control on the information.
+Non-blocking form of the \refapi{PMIx_Query_info} \ac{API}
 
-NOTE: There is no blocking form of this API as the structures passed to query info differ from those for receiving the results.
 
-The \refarg{status} argument to the callback function indicates if requested data was found or not.
-An array of \refstruct{pmix_info_t} will contain each key that was provided and the corresponding value that was found. Requests for keys that are not found will return the key paired with a value of type \refconst{PMIX_UNDEF}.
-
-\adviceimplstart
-Information returned from \refapi{PMIx_Query_info_nb} shall be locally cached so that retrieval by subsequent calls to \refapi{PMIx_Get} or \refapi{PMIx_Query_info_nb} can succeed with minimal overhead. The local cache shall be checked prior to querying the \ac{PMIx} server and/or the host environment. Queries that include the \refattr{PMIX_QUERY_REFRESH_CACHE} attribute shall bypass the local cache and retrieve a new value for the query, refreshing the values in the cache upon return.
-\adviceimplend
-
-\subsubsection{Using \refapi{PMIx_Get} vs \refapi{PMIx_Query_info_nb}}
+\subsubsection{Using \refapi{PMIx_Get} vs \refapi{PMIx_Query_info}}
 \label{chap:api_job_mgmt:query}
 
-Both \refapi{PMIx_Get} and \refapi{PMIx_Query_info_nb} can be used to retrieve information about the system. In general, the \emph{get} operation should be used to retrieve:
+Both \refapi{PMIx_Get} and \refapi{PMIx_Query_info} can be used to retrieve information about the system. In general, the \emph{get} operation should be used to retrieve:
 
 \begin{itemize}
 \item information provided by the host environment at time of job start. This includes information on the number of processes in the job, their location, and possibly their communication endpoints
@@ -242,7 +346,7 @@ In contrast, the \emph{query} option should be used to access:
 \item queries focused on retrieving multi-attribute blocks of data with a single request, thus bypassing the single-key limitation of the \refapi{PMIx_Get} \ac{API}
 \end{itemize}
 
-In theory, all information can be accessed via \refapi{PMIx_Query_info_nb} as the local cache is typically the same datastore searched by \refapi{PMIx_Get}. However, in practice, the overhead associated with the \emph{query} operation may (depending upon implementation) be higher than the simpler \emph{get} operation due to the need to construct and process the more complex \refstruct{pmix_query_t} structure. Thus, requests for a single key value are likely to be accomplished faster with \refapi{PMIx_Get} versus the \emph{query} operation.
+In theory, all information can be accessed via \refapi{PMIx_Query_info} as the local cache is typically the same datastore searched by \refapi{PMIx_Get}. However, in practice, the overhead associated with the \emph{query} operation may (depending upon implementation) be higher than the simpler \emph{get} operation due to the need to construct and process the more complex \refstruct{pmix_query_t} structure. Thus, requests for a single key value are likely to be accomplished faster with \refapi{PMIx_Get} versus the \emph{query} operation.
 
 \subsubsection{Accessing attribute support information}
 \label{chap:api_job_mgmt:queryattrs}
@@ -297,7 +401,8 @@ Request an allocation operation from the host resource manager.
 \begin{codepar}
 pmix_status_t
 PMIx_Allocation_request(pmix_alloc_directive_t directive,
-                        pmix_info_t info[], size_t ninfo);
+                        pmix_info_t info[], size_t ninfo,
+                        pmix_info_t *results[], size_t *nresults);
 \end{codepar}
 \cspecificend
 
@@ -305,6 +410,8 @@ PMIx_Allocation_request(pmix_alloc_directive_t directive,
 \argin{directive}{Allocation directive (handle)}
 \argin{info}{Array of \refstruct{pmix_info_t} structures (array of handles)}
 \argin{ninfo}{Number of elements in the \refarg{info} array (integer)}
+\arginout{results}{Address where a pointer to an array of \refstruct{pmix_info_t} containing the results of the request can be returned (memory reference)}
+\arginout{nresults}{Address where the number of elements in \refarg{results} can be returned (handle)}
 \end{arglist}
 
 Returns one of the following:
@@ -321,7 +428,7 @@ Returns one of the following:
 
 Host environments that implement support for this operation are required to support the following attributes:
 
-\pasteAttributeItem{PMIX_ALLOC_ID}
+\pasteAttributeItem{PMIX_ALLOC_REQ_ID}
 \pasteAttributeItem{PMIX_ALLOC_NUM_NODES}
 \pasteAttributeItem{PMIX_ALLOC_NUM_CPUS}
 \pasteAttributeItem{PMIX_ALLOC_TIME}
@@ -366,6 +473,8 @@ Any additional allocated resources will be considered as part of the current all
 \item Return no-longer-required resources to the scheduler.
 This includes the ``loan'' of resources back to the scheduler with a promise to return them upon subsequent request.
 \end{compactitem}
+
+If successful, the returned results for a request for additional resources must include the host resource manager's identifier (\refattr{PMIX_ALLOC_ID}) that the requester can use to specify the resources in, for example, a call to \refapi{PMIx_Spawn}.
 
 %%%%%%%%%%%
 \subsection{\code{PMIx_Allocation_request_nb}}
@@ -412,7 +521,7 @@ Returns one of the following:
 
 Host environments that implement support for this operation are required to support the following attributes:
 
-\pasteAttributeItem{PMIX_ALLOC_ID}
+\pasteAttributeItem{PMIX_ALLOC_REQ_ID}
 \pasteAttributeItem{PMIX_ALLOC_NUM_NODES}
 \pasteAttributeItem{PMIX_ALLOC_NUM_CPUS}
 \pasteAttributeItem{PMIX_ALLOC_TIME}
@@ -475,7 +584,8 @@ Request a job control action.
 \begin{codepar}
 pmix_status_t
 PMIx_Job_control(const pmix_proc_t targets[], size_t ntargets,
-                 const pmix_info_t directives[], size_t ndirs)
+                 const pmix_info_t directives[], size_t ndirs,
+                 pmix_info_t *results[], size_t *nresults)
 \end{codepar}
 \cspecificend
 
@@ -484,14 +594,14 @@ PMIx_Job_control(const pmix_proc_t targets[], size_t ntargets,
 \argin{ntargets}{Number of element in the \refarg{targets} array (integer)}
 \argin{directives}{Array of info structures (array of handles)}
 \argin{ndirs}{Number of element in the \refarg{directives} array (integer)}
-\argin{cbfunc}{Callback function \refapi{pmix_info_cbfunc_t} (function reference)}
-\argin{cbdata}{Data to be passed to the callback function (memory reference)}
+\arginout{results}{Address where a pointer to an array of \refstruct{pmix_info_t} containing the results of the request can be returned (memory reference)}
+\arginout{nresults}{Address where the number of elements in \refarg{results} can be returned (handle)}
 \end{arglist}
 
 Returns one of the following:
 
 \begin{itemize}
-    \item \refconst{PMIX_SUCCESS}, indicating that the request was processed by the host environment and returned \textit{success}
+    \item \refconst{PMIX_SUCCESS}, indicating that the request was processed by the host environment and returned \textit{success}. Details of the result will be returned in the \refarg{results} array
     \item a \ac{PMIx} error constant indicating either an error in the input or that the request was refused
 \end{itemize}
 
@@ -664,7 +774,8 @@ Request that application processes be monitored.
 \begin{codepar}
 pmix_status_t
 PMIx_Process_monitor(const pmix_info_t *monitor, pmix_status_t error,
-                     const pmix_info_t directives[], size_t ndirs)
+                     const pmix_info_t directives[], size_t ndirs,
+                     pmix_info_t *results[], size_t *nresults)
 \end{codepar}
 \cspecificend
 
@@ -673,12 +784,14 @@ PMIx_Process_monitor(const pmix_info_t *monitor, pmix_status_t error,
 \argin{error}{status (integer)}
 \argin{directives}{Array of info structures (array of handles)}
 \argin{ndirs}{Number of elements in the \refarg{directives} array (integer)}
+\arginout{results}{Address where a pointer to an array of \refstruct{pmix_info_t} containing the results of the request can be returned (memory reference)}
+\arginout{nresults}{Address where the number of elements in \refarg{results} can be returned (handle)}
 \end{arglist}
 
 Returns one of the following:
 
 \begin{itemize}
-    \item \refconst{PMIX_SUCCESS}, indicating that the request was processed and returned \textit{success}
+    \item \refconst{PMIX_SUCCESS}, indicating that the request was processed and returned \textit{success}. Details of the result will be returned in the \refarg{results} array
     \item a PMIx error constant indicating either an error in the input or that the request was refused
 \end{itemize}
 

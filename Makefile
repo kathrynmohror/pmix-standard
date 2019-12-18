@@ -1,7 +1,7 @@
 # Makefile for the PMIx Standard document in LaTex format.
 # For more information, see the master document, pmix-standard.tex.
 
-version=3.1
+version=4.0
 default: pmix-standard.pdf
 
 CHAPTERS= \
@@ -17,9 +17,10 @@ CHAPTERS= \
 	Chap_API_Data_Mgmt.tex \
 	Chap_API_Security.tex \
 	Chap_API_Server.tex \
+	Chap_API_Scheduler.tex \
 	Chap_API_Sets_Groups.tex \
 	Chap_API_Coord.tex \
-	App_Support.tex \
+	App_Python.tex \
 	Acknowledgements.tex
 
 SOURCES=
@@ -37,7 +38,9 @@ INTERMEDIATE_FILES=pmix-standard.pdf \
 		pmix-standard.out \
 		pmix-standard.log \
 		pmix-standard.bbl \
-		pmix-standard.blg
+		pmix-standard.blg \
+		pmix-standard.synctex.gz \
+		pmix-standard.xwm
 
 all: pmix-standard.pdf
 
@@ -63,6 +66,10 @@ pmix-standard.pdf: $(CHAPTERS) $(SOURCES) pmix.sty pmix-standard.tex figs/pmix-l
 	&& { echo "====> Error check references (above)" ; exit 1; } || { exit 0; }
 	@echo "====> Success"
 	@cp pmix-standard.pdf pmix-standard-${version}.pdf
+
+check: pmix-standard.pdf
+	@echo "====> Checking for Attributes Declared, but not referenced"
+	@./bin/check-attr-refs.py
 
 clean:
 	rm -f $(INTERMEDIATE_FILES) pmix-standard-*.pdf

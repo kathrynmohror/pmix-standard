@@ -20,7 +20,7 @@ The following \acp{API} allow the \ac{RM} daemon that hosts the \ac{PMIx} server
 %%%%
 \summary
 
-Generate a regular expression representation of the input string.
+Generate a compressed representation of the input string.
 
 %%%%
 \format
@@ -29,13 +29,13 @@ Generate a regular expression representation of the input string.
 \cspecificstart
 \begin{codepar}
 pmix_status_t
-PMIx_generate_regex(const char *input, char **regex)
+PMIx_generate_regex(const char *input, char **output)
 \end{codepar}
 \cspecificend
 
 \begin{arglist}
 \argin{input}{String to process (string)}
-\argout{regex}{Regular expression representation of \refarg{input} (string)}
+\argout{output}{Compressed representation of \refarg{input} (array of bytes)}
 \end{arglist}
 
 Returns \refconst{PMIX_SUCCESS} or a negative value corresponding to a PMIx error constant.
@@ -43,15 +43,15 @@ Returns \refconst{PMIX_SUCCESS} or a negative value corresponding to a PMIx erro
 %%%%
 \descr
 
-Given a comma-separated list of \refarg{input} values, generate a regular expression that can be passed down to the \ac{PMIx} client for parsing.
-The order of the individual values in the \refarg{input} string is preserved in the resulting \refarg{regex} string.
-The caller is responsible for free'ing the resulting string.
+Given a comma-separated list of \refarg{input} values, generate a reduced size representation of the input that can be passed down to the \ac{PMIx} server library's \refapi{PMIx_server_register_nspace} \ac{API} for parsing. The order of the individual values in the \refarg{input} string is preserved across the operation. The caller is responsible for releasing the returned data.
 
-If values have leading zero's, then that is preserved, as are prefix and suffix strings. For example, an input string of ``\code{odin009.org,odin010.org,odin011.org,odin012.org,odin[102-107].org}'' will return a regular expression of ``\code{pmix:odin[009-012,102-107].org}''
+The precise compressed representations will be implementation specific. However, all \ac{PMIx} implementations are required to include a \code{NULL}-terminated string in the output representation that can be printed for diagnostic purposes.
 
-\adviceuserstart
-The returned regular expression will have a ``\code{pmix:}'' at the beginning of the string. This informs the \ac{PMIx} parser that the string was produced using the \ac{PRI}'s regular expression generator, and thus that same plugin should be used for parsing the string
-\adviceuserend
+\advicermstart
+The returned representation may be an arbitrary array of bytes as opposed to a valid NULL-terminated string. However, the method used to generate the representation shall be identified with a colon-delimited string at the beginning of the output. For example, an output starting with \code{"pmix:\textbackslash0"} might indicate that the representation is a \ac{PMIx}-defined regular expression represented as a \code{NULL}-terminated string following the \code{"pmix:\textbackslash0"} prefix. In contrast, an output starting with \code{"blob:\textbackslash0"} might indicate a compressed binary array follows the prefix.
+
+Communicating the resulting output should be done by first packing the returned expression using the \refapi{PMIx_Data_pack}, declaring the input to be of type \refconst{PMIX_REGEX}, and then obtaining the resulting blob to be communicated using the \refmacro{PMIX_DATA_BUFFER_UNLOAD} macro. The reciprocal method can be used on the remote end prior to passing the regex into \refapi{PMIx_server_register_nspace}. The pack/unpack routines will ensure proper handling of the data based on the regex prefix.
+\advicermend
 
 
 %%%%%%%%%%%
@@ -61,7 +61,7 @@ The returned regular expression will have a ``\code{pmix:}'' at the beginning of
 %%%%
 \summary
 
-Generate a regular expression representation of the input string.
+Generate a compressed representation of the input identifying the processes on each node.
 
 %%%%
 \format
@@ -75,7 +75,7 @@ pmix_status_t PMIx_generate_ppn(const char *input, char **ppn)
 
 \begin{arglist}
 \argin{input}{String to process (string)}
-\argout{regex}{Regular expression representation of \refarg{input} (string)}
+\argout{ppn}{Compressed representation of \refarg{input} (array of bytes)}
 \end{arglist}
 
 Returns \refconst{PMIX_SUCCESS} or a negative value corresponding to a PMIx error constant.
@@ -83,11 +83,13 @@ Returns \refconst{PMIX_SUCCESS} or a negative value corresponding to a PMIx erro
 %%%%
 \descr
 
-The input is expected to consist of a semicolon-separated list of ranges representing the ranks of processes on each node of the job. Thus, an input of "1-4;2-5;8,10,11,12;6,7,9" would generate a regex of "pmix:2x(3);8,10-12;6-7,9"
+The input shall consist of a semicolon-separated list of ranges representing the ranks of processes on each node of the job - e.g.,  "1-4;2-5;8,10,11,12;6,7,9". Each field of the input must correspond to the node name provided at that position in the input to \refapi{PMIx_generate_regex}. Thus, in the example, ranks 1-4 would be located on the first node of the comma-separated list of names provided to \refapi{PMIx_generate_regex}, and ranks 2-5 would be on the second name in the list.
 
-\adviceuserstart
-The returned regular expression will have a ``pmix:'' at the beginning of the string. This informs the \ac{PMIx} parser that the string was produced using the \ac{PRI}'s regular expression generator, and thus that same plugin should be used for parsing the string
-\adviceuserend
+\advicermstart
+The returned representation may be an arbitrary array of bytes as opposed to a valid NULL-terminated string. However, the method used to generate the representation shall be identified with a colon-delimited string at the beginning of the output. For example, an output starting with \code{"pmix:"} indicates that the representation is a \ac{PMIx}-defined regular expression represented as a NULL-terminated string. In contrast, an output starting with \code{"blob:\textbackslash0size=1234:"} is a compressed binary array.
+
+Communicating the resulting output should be done by first packing the returned expression using the \refapi{PMIx_Data_pack}, declaring the input to be of type \refconst{PMIX_REGEX}, and then obtaining the blob to be communicated using the \refmacro{PMIX_DATA_BUFFER_UNLOAD} macro. The pack/unpack routines will ensure proper handling of the data based on the regex prefix.
+\advicermend
 
 %%%%%%%%%%%
 \subsection{\code{PMIx_server_register_nspace}}
@@ -204,6 +206,7 @@ The following attributes may be provided by host environments:
             \item \pastePRRTEAttributeItem{PMIX_MAPBY}
             \item \pastePRRTEAttributeItem{PMIX_RANKBY}
             \item \pastePRRTEAttributeItem{PMIX_BINDTO}
+            \item \pasteAttributeItem{PMIX_ANL_MAP}
         \end{itemize}
     \item for its own node:
         \begin{itemize}
@@ -223,6 +226,14 @@ The following attributes may be provided by host environments:
 \end{itemize}
 
 Attributes not directly provided by the host environment may be derived by the \ac{PMIx} server library from other required information and included in the data made available to the server library's clients.
+
+The following optional attributes may be provided by the host environment to identify the programming model (as specified by the user) being executed within the namespace. The \ac{PMIx} server library may utilize this information to customize the environment to fit that model (e.g., adding environmental variables specified by the corresponding standard for that model):
+
+\begin{itemize}
+    \item \pastePRIAttributeItem{PMIX_PROGRAMMING_MODEL}
+    \item \pastePRIAttributeItem{PMIX_MODEL_LIBRARY_NAME}
+    \item \pastePRIAttributeItem{PMIX_MODEL_LIBRARY_VERSION}
+\end{itemize}
 
 \optattrend
 
@@ -774,6 +785,14 @@ Returns one of the following:
 \pastePRIAttributeItem{PMIX_ALLOC_NETWORK_QOS}
 \pastePRIAttributeItem{PMIX_ALLOC_TIME}
 
+The following optional attributes may be provided by the host environment to identify the programming model (as specified by the user) being executed within the application. The \ac{PMIx} server library may utilize this information to harvest/forward model-specific environmental variables, record the programming model associated with the application, etc.
+
+\begin{itemize}
+    \item \pastePRIAttributeItem{PMIX_PROGRAMMING_MODEL}
+    \item \pastePRIAttributeItem{PMIX_MODEL_LIBRARY_NAME}
+    \item \pastePRIAttributeItem{PMIX_MODEL_LIBRARY_VERSION}
+\end{itemize}
+
 \optattrend
 
 %%%%
@@ -1050,7 +1069,7 @@ server, which is free to release it upon return from the callback
 %%%%%%%%%%%
 \subsection{\code{pmix_server_module_t} Module}
 \declareapi{pmix_server_module_t}
-
+\label{server:module_fns}
 %%%%
 \summary
 
@@ -1090,6 +1109,8 @@ typedef struct pmix_server_module_3_0_0_t {
     pmix_server_validate_cred_fn_t      validate_credential;
     pmix_server_iof_fn_t                iof_pull;
     pmix_server_stdin_fn_t              push_stdin;
+    /* v4x interfaces */
+    pmix_server_grp_fn_t                group;
 } pmix_server_module_t;
 \end{codepar}
 \cspecificend
@@ -2887,4 +2908,78 @@ Passes stdin to the host environment for transmission to specified recipients. T
 If this module entry is provided and called by the \ac{PMIx} server library, then the host environment must either provide the requested services or return \refconst{PMIX_ERR_NOT_SUPPORTED} to the provided \refarg{cbfunc}.
 \advicermend
 
+
+
+%%%%%%%%%%%
+\subsection{\code{pmix_server_grp_fn_t}}
+\declareapi{pmix_server_grp_fn_t}
+
+%%%%
+\summary
+
+Request group operations (construct, destruct, etc.) on behalf of a set of processes.
+
+%%%%
+\format
+
+\versionMarker{4.0}
+\cspecificstart
+\begin{codepar}
+typedef pmix_status_t (*pmix_server_grp_fn_t)(
+                           pmix_group_operation_t op, char grp[],
+                           const pmix_proc_t procs[], size_t nprocs,
+                           const pmix_info_t directives[],
+                           size_t ndirs,
+                           pmix_info_cbfunc_t cbfunc, void *cbdata);
+\end{codepar}
+\cspecificend
+
+\begin{arglist}
+\argin{op}{\refstruct{pmix_group_operation_t} value indicating operation the host is requested to perform (integer)}
+\argin{grp}{Character string identifying the group (string)}
+\argin{procs}{Array of \refstruct{pmix_proc_t} identifiers of participants (handle)}
+\argin{nprocs}{Number of elements in the \refarg{procs} array (integer)}
+\argin{directives}{Array of info structures (array of handles)}
+\argin{ndirs}{Number of elements in the \refarg{info} array (integer)}
+\argin{cbfunc}{Callback function \refapi{pmix_info_cbfunc_t} (function reference)}
+\argin{cbdata}{Data to be passed to the callback function (memory reference)}
+\end{arglist}
+
+Returns one of the following:
+
+\begin{itemize}
+    \item \refconst{PMIX_SUCCESS}, indicating that the request is being processed by the host environment - result will be returned in the provided \refarg{cbfunc}. Note that the library must not invoke the callback function prior to returning from the \ac{API}.
+    \item \refconst{PMIX_OPERATION_SUCCEEDED}, indicating that the request was immediately processed and returned \textit{success} - the \refarg{cbfunc} will not be called
+    \item a PMIx error constant indicating either an error in the input or that the request was immediately processed and failed - the \refarg{cbfunc} will not be called
+\end{itemize}
+
+\optattrstart
+The following attributes may be supported by a host environment.
+
+\pastePRIAttributeItem{PMIX_GROUP_ASSIGN_CONTEXT_ID}
+\pasteAttributeItem{PMIX_GROUP_LOCAL_ONLY}
+\pasteAttributeItem{PMIX_GROUP_ENDPT_DATA}
+\pasteAttributeItem{PMIX_GROUP_OPTIONAL}
+\pasteAttributeItem{PMIX_RANGE}
+
+
+The following attributes may be included in the host's response:
+
+\pasteAttributeItem{PMIX_GROUP_ID}
+\pasteAttributeItem{PMIX_GROUP_MEMBERSHIP}
+\pasteAttributeItem{PMIX_GROUP_CONTEXT_ID}
+\pasteAttributeItem{PMIX_GROUP_ENDPT_DATA}
+
+\optattrend
+
+\reqattrend
+
+%%%%
+\descr
+
+Perform the specified operation across the identified processes, plus any special actions included in the directives. Return the result of any special action requests in the callback function when the operation is completed. Actions may include a request (\refattr{PMIX_GROUP_ASSIGN_CONTEXT_ID}) that the host assign a unique numerical (size_t) ID to this group - if given, the \refattr{PMIX_RANGE} attribute will specify the range across which the ID must be unique (default to \refconst{PMIX_RANGE_SESSION}).
+
+\advicermstart
+If this module entry is provided and called by the \ac{PMIx} server library, then the host environment must either provide the requested services or return \refconst{PMIX_ERR_NOT_SUPPORTED} to the provided \refarg{cbfunc}.
+\advicermend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
